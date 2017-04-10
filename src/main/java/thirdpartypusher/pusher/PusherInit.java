@@ -16,7 +16,6 @@ public final class PusherInit {
             Cache.p.put(websocket.binaryHandlerID(), websocket);
             websocket.closeHandler(c -> {
                 // logger.debug("Websocket {} closed.",
-                // webSocket.binaryHandlerID());
                 Cache.p.remove(websocket.binaryHandlerID());
                 System.out.println("Disconnected! Cache size : "
                         + Cache.p.size());
