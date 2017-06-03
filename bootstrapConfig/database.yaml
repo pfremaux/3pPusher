@@ -1,0 +1,5 @@
+inMemory:
+  driver: org.hsqldb.jdbcDriver
+  uri: jdbc:hsqldb:mem:testHSQLDB
+#  login: root
+ # password: root

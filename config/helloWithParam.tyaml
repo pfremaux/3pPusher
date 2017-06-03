@@ -1,0 +1,9 @@
+# First configuration
+---
+path: /hello/:name
+# port: 8080
+# ca marche ça ? juste apres
+query:
+  civ: string:mandatory
+response:
+  msg: Hello $civ $name

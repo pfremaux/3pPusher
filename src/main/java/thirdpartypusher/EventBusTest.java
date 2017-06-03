@@ -23,11 +23,11 @@ public class EventBusTest {
         HttpServer server = vertx.createHttpServer(options);
         server.websocketHandler(websocket -> {
             System.out.println("Connected!" + websocket.binaryHandlerID());
-            Cache.p.put(websocket.binaryHandlerID(), websocket);
+            Cache.uuidToWs.put(websocket.binaryHandlerID(), websocket);
             websocket.closeHandler(c -> {
-                Cache.p.remove(websocket.binaryHandlerID());
+                Cache.uuidToWs.remove(websocket.binaryHandlerID());
                 System.out.println("Disconnected! Cache size : "
-                        + Cache.p.size());
+                        + Cache.uuidToWs.size());
                 // consumer.unregister();
             });
 
@@ -39,7 +39,7 @@ public class EventBusTest {
                 System.out.println("jsonObject " + obj);
                 String dest = obj.getString("dest");
                 JsonObject data = obj.getJsonObject("data");
-                Cache.p.get(dest).writeFinalTextFrame(data.toString());
+                Cache.uuidToWs.get(dest).writeFinalTextFrame(data.toString());
             });
             rc.next();
         });
