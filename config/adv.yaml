@@ -3,6 +3,8 @@
 path: /bighello/:name
 # port: 8080
 # ca marche ça ? juste apres
+urlParam:
+    name: string
 query:
   civ: string:mandatory
 actions:
@@ -13,4 +15,10 @@ actions:
   #- sql: inMemory> load> select count(nom) nb from tbl where civ=?:civ;
   #- sql: inMemory> insert> insert into tbl (civ, cnt) values (?:civ, ?:nb);
 response:
-  msg: Hello :civ :name :tab
+  # format: txt json yaml
+  json:
+    civ: :civ
+    name: :name
+    data:
+      - oui
+      - non

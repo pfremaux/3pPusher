@@ -7,6 +7,7 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
+import org.apache.commons.lang3.StringUtils;
 import thirdpartypusher.db.DbAccessor;
 import thirdpartypusher.db.Request;
 import thirdpartypusher.start.InputSetupManager;
@@ -47,29 +48,52 @@ public class CustomizableRest extends AbstractVerticle {
         router.get(config.getPath())./*consumes("application/json").*/handler(rc -> {
             //rc.response().setStatusCode(200).end();
             HttpServerRequest request = rc.request();
-            String param = customInput(request);
-
-
+            Map<String, String>  params = customInput(request);
             customDbActions();
-
             JsonObject jsonObject = new JsonObject(config.getResponse());
-            final String strResponse = jsonObject.toString() + param;
+            final String strResponse;
+            if (jsonObject.containsKey("txt")) {
+                strResponse = responseAsString(jsonObject, params);
+            } else if (jsonObject.containsKey("json")) {
+                strResponse = StringUtils.EMPTY;
+                //strResponse = new JsonObject(jsonObject.getValue("json")).toString();
+            } else if (jsonObject.containsKey("yaml")) {
+                strResponse = StringUtils.EMPTY;
+            } else {
+                strResponse = StringUtils.EMPTY;
+            }
+
             customResponse(request, strResponse);
         });
 
         System.out.println(config.getPath());
     }
 
-    private String customInput(HttpServerRequest request) {
+    private String responseAsString(JsonObject jsonObject, Map<String, String>  params) {
+        String txt = jsonObject.getString("txt");
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            txt = txt.replaceAll(":"+entry.getKey(), entry.getValue());
+        }
+        return txt;
+    }
+
+    private Map<String, String>  customInput(HttpServerRequest request) {
+        Map<String, String> allInput = new HashMap<>();
         String param = null;
         String uri = request.uri();
         Map<String, String> qParams = extractUrlParam(uri);
         System.out.println("qparam = " + qParams);
-        for (Map.Entry<String, String> entry : config.getQuery().entrySet()) {
+        /*for (Map.Entry<String, String> entry : config.getQuery().entrySet()) {
+        }*/
+        allInput.putAll(qParams);
+        for (Map.Entry<String, String> entry : config.getUrlParam().entrySet()) {
             // param .... d'url
             param = request.getParam(entry.getKey());
+            // TODO compute if exists
+            allInput.put(entry.getKey(), param);
         }
-        return param;
+        // TODO merger ce2 sortes dinput. Dans le futur on mappera le body pour les POST et PUT
+        return allInput;
     }
 
     private void customDbActions() {
