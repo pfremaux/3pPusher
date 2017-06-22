@@ -3,6 +3,8 @@ package thirdpartypusher.start;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import thirdpartypusher.db.DbAccessor;
 import thirdpartypusher.db.Request;
@@ -41,18 +43,6 @@ public class Startup {
         loadRestServices(dbAccessorMap);
     }
 
-    private void loadRestServices(Map<String, DbAccessor> dbAccessorMap) throws IOException {
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        final File configDirectory = Paths.get("./config").toFile();
-        File[] filesConfig = configDirectory.listFiles((dir, name) -> name.endsWith(".yaml"));
-        final Router router = Router.router(vertx);
-        for (File fileConfig : filesConfig) {
-            final ConfigCustom config = mapper.readValue(fileConfig, ConfigCustom.class);
-            vertx.deployVerticle(new CustomizableRest(config, router, dbAccessorMap));
-        }
-    }
-
-
 
     private Map<String, DbAccessor> loadBootstrapConfig() throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -71,9 +61,23 @@ public class Startup {
         return dbAccessorMap;
     }
 
-    public void quickStart() {
-
-
+    private void customInit(Map<String, DbAccessor> dbAccessorMap) throws SQLException {
+        Connection inMemory = dbAccessorMap.get("inMemory").connect();
+        List params = Arrays.asList("mr", 1);
+        Map<String, String> expRes = new HashMap<>();
+        expRes.put("civ", String.class.getName());
+        expRes.put("cnt", String.class.getName());
+        Request request = new Request(RQT_SELECT, Collections.emptyMap(), expRes);
+        dbAccessorMap.get("inMemory").execute(inMemory, RQT_CREATE_TBL_TABLE, Collections.emptyList());
+        dbAccessorMap.get("inMemory").execute(inMemory, RQT_INSERT, params);
+        JsonArray result = dbAccessorMap.get("inMemory").read(inMemory, request, Collections.emptyList());
+        dbAccessorMap.get("inMemory").disconnect(inMemory);
+        for (Object o : result) {
+            JsonObject map = (JsonObject) o;
+            for (Map.Entry<String, Object> entry : map) {
+                System.out.println(entry.getKey() + " = " + entry.getValue());
+            }
+        }
     }
 
     /* ex
@@ -96,40 +100,14 @@ public class Startup {
         return "";
     }
 
-    /*
-    ex : http://localhost/path?q1&q2
-    * */
-    private static Set<String> extractQParam(String path) {
-        Set<String> result = Collections.emptySet();
-        int pos = path.indexOf('?');
-        if (pos != -1) {
-            result = new HashSet<>();
-            String queryParams = path.substring(pos + 1);
-            StringTokenizer st = new StringTokenizer(queryParams, "&", false);
-            while (st.hasMoreTokens()) {
-                String queryParam = st.nextToken();
-                result.add(queryParam);
-            }
-        }
-        return result;
-    }
-
-
-    private void customInit(Map<String, DbAccessor> dbAccessorMap) throws SQLException {
-        Connection inMemory = dbAccessorMap.get("inMemory").connect();
-        List params = Arrays.asList("mr", 1);
-        Map<String, Class> expRes = new HashMap<>();
-        expRes.put("civ", String.class);
-        expRes.put("cnt", String.class);
-        Request request = new Request(RQT_SELECT, Collections.emptyMap(), expRes);
-        dbAccessorMap.get("inMemory").execute(inMemory, RQT_CREATE_TBL_TABLE, Collections.emptyList());
-        dbAccessorMap.get("inMemory").execute(inMemory, RQT_INSERT, params);
-        Collection<Map<String, Object>> result = dbAccessorMap.get("inMemory").read(inMemory, request, Collections.emptyList());
-        dbAccessorMap.get("inMemory").disconnect(inMemory);
-        for (Map<String, Object> map : result) {
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                System.out.println(entry.getKey() + " = " + entry.getValue());
-            }
+    private void loadRestServices(Map<String, DbAccessor> dbAccessorMap) throws IOException {
+        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        final File configDirectory = Paths.get("./config").toFile();
+        File[] filesConfig = configDirectory.listFiles((dir, name) -> name.endsWith(".yaml"));
+        final Router router = Router.router(vertx);
+        for (File fileConfig : filesConfig) {
+            final ConfigCustom config = mapper.readValue(fileConfig, ConfigCustom.class);
+            vertx.deployVerticle(new CustomizableRest(config, router, dbAccessorMap));
         }
     }
 

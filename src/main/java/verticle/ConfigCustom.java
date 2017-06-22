@@ -1,9 +1,6 @@
 package verticle;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ConfigCustom {
 
@@ -12,7 +9,7 @@ public class ConfigCustom {
     private String path = "/";
     private Map<String, String> urlParam = Collections.emptyMap();
     private Map<String, String> query = Collections.emptyMap();
-    private Map<String, Object> response = Collections.emptyMap();
+    private HashMap<String, Object> response = new HashMap<>();
     private List<Map<String, Object>> actions = new ArrayList<>();
 
     @Override
@@ -50,10 +47,10 @@ public class ConfigCustom {
     }
 
     public Map<String, Object> getResponse() {
-        return response;
+        return (Map<String, Object>) Collections.unmodifiableMap(response);
     }
 
-    public void setResponse(Map<String, Object> response) {
+    public void setResponse(HashMap<String, Object> response) {
         this.response = response;
     }
 

@@ -1,0 +1,20 @@
+# First configuration
+---
+path: /users
+method: POST
+# port: 8080
+# ca marche ça ? juste apres
+# urlParam:
+#     name: string
+# query:
+#  civ: string:mandatory
+actions:
+  - type: sql
+    in: inMemory
+    command: insert into tbl (nom, civ) values (?, ?);
+    param:
+      - name
+      - civ
+    save: id
+response:
+  txt: :id

@@ -1,0 +1,17 @@
+# First configuration
+---
+path: /users/:name
+method: GET
+# port: 8080
+# ca marche ça ? juste apres
+urlParam:
+    name: string
+actions:
+  - type: sql
+    in: inMemory
+    command: select nom, civ from tbl where nom = ?;
+    param:
+      - name
+    save: tab
+response:
+  txt: :tab

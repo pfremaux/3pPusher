@@ -1,0 +1,10 @@
+# First configuration
+---
+path: /hello/:name
+# port: 8080
+# ca marche ça ? juste apres
+urlParam:
+    name: string
+response:
+  # format: txt json yaml
+  txt: World ! :name

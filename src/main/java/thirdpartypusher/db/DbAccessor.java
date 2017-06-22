@@ -1,9 +1,9 @@
 package thirdpartypusher.db;
 
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 import java.sql.*;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,24 +46,24 @@ public class DbAccessor {
         }
     }
 
-    public List<Map<String, Object>> read(Connection c, Request request, List params) throws SQLException {
+    public JsonArray read(Connection c, Request request, List params) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(request.getRequest())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
             ps.execute();
             try (ResultSet rs = ps.getResultSet()) {
-                final List<Map<String, Object>> result = new ArrayList<>();
+                final JsonArray result = new JsonArray();
                 while (rs.next()) {
-                    Map<String, Object> row = new HashMap<>();
-                    for (Map.Entry<String, Class> entry : request.getExpectedResultPerRow().entrySet()) {
-                        if (String.class.getName().equals(entry.getValue().getName())) {
+                    JsonObject row = new JsonObject();
+                    for (Map.Entry<String, String> entry : request.getExpectedResultPerRow().entrySet()) {
+                        if (String.class.getName().equals(entry.getValue())) {
                             String string = rs.getString(entry.getKey());
                             row.put(entry.getKey(), string);
-                        } else if (Long.class.getName().equals(entry.getValue().getName())) {
+                        } else if (Long.class.getName().equals(entry.getValue())) {
                             long aLong = rs.getLong(entry.getKey());
                             row.put(entry.getKey(), aLong);
-                        } else if (Integer.class.getName().equals(entry.getValue().getName())) {
+                        } else if (Integer.class.getName().equals(entry.getValue())) {
                             int anInt = rs.getInt(entry.getKey());
                             row.put(entry.getKey(), anInt);
                         } else {
@@ -77,7 +77,6 @@ public class DbAccessor {
             }
         }
     }
-
 
 
     public void disconnect(Connection c) throws SQLException {

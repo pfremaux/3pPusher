@@ -10,6 +10,13 @@ query:
 actions:
   - type: sql
     in: inMemory
+    command: insert into tbl (nom, civ) values (?, ?);
+    param:
+      - name
+      - civ
+    save: tab
+  - type: sql
+    in: inMemory
     command: select nom, civ from tbl;
     save: tab
   #- sql: inMemory> load> select count(nom) nb from tbl where civ=?:civ;
@@ -19,6 +26,7 @@ response:
   json:
     civ: :civ
     name: :name
+    sqlresult: :tab
     data:
       - oui
       - non
