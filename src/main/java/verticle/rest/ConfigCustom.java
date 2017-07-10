@@ -1,4 +1,4 @@
-package verticle;
+package verticle.rest;
 
 import java.util.*;
 

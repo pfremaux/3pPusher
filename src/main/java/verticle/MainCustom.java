@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
+import verticle.rest.ConfigCustom;
+import verticle.rest.CustomizableRest;
 
 import java.io.File;
 import java.io.IOException;

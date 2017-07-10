@@ -1,4 +1,4 @@
-package verticle;
+package verticle.rest;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
@@ -9,7 +9,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 import org.apache.commons.lang3.StringUtils;
 import thirdpartypusher.db.DbAccessor;
 import thirdpartypusher.db.Request;
@@ -39,6 +38,7 @@ public class CustomizableRest extends AbstractVerticle {
         ConfigCustom config = mapper.readValue(new File("./config/hello.tyaml"), ConfigCustom.class);*/
         final Vertx vertx = getVertx();
 
+        // Global setup
         HttpServerOptions options = new HttpServerOptions()
                 // .setTrustStoreOptions(options)
                 // .setClientAuth(clientAuth)
@@ -89,8 +89,9 @@ public class CustomizableRest extends AbstractVerticle {
                     String valueModelJson = (String) entryModelJson.getValue();
                     Object realValueReturned = null;
                     if (valueModelJson.startsWith(":")) {
-                        String correspondingValueModelJson = params.get(valueModelJson.substring(1)).toString();
-                        if (correspondingValueModelJson != null) {
+                        // TODO revoir l'usage et l'utilité des variables ici
+                        Object value = params.get(valueModelJson.substring(1));
+                        if (value != null) {
                             for (Map.Entry<String, Object> entry2 : params.entrySet()) {
                                 if (valueModelJson.equals(":" + entry2.getKey())) {
                                     realValueReturned = entry2.getValue();
@@ -125,18 +126,15 @@ public class CustomizableRest extends AbstractVerticle {
     private Map<String, Object> customInput(HttpServerRequest request) {
 
         Map<String, Object> allInput = new HashMap<>();
-        String param = null;
+        String urlParam = null;
         String uri = request.uri();
-        Map<String, String> qParams = extractUrlParam(uri);
-        System.out.println("qparam = " + qParams);
-        /*for (Map.Entry<String, String> entry : config.getQuery().entrySet()) {
-        }*/
-        allInput.putAll(qParams);
+        Map<String, String> queryParams = extractQueryParam(uri);
+        System.out.println("qparam = " + queryParams);
+        allInput.putAll(queryParams);
         for (Map.Entry<String, String> entry : config.getUrlParam().entrySet()) {
-            // param .... d'url
-            param = request.getParam(entry.getKey());
+            urlParam = request.getParam(entry.getKey());
             // TODO compute if exists
-            allInput.put(entry.getKey(), param);
+            allInput.put(entry.getKey(), urlParam);
         }
 
         request.bodyHandler(bh -> {
@@ -149,7 +147,7 @@ public class CustomizableRest extends AbstractVerticle {
             }
             final String strResponse;
             try {
-                customDbActions(allInput);
+                customActions(allInput);
             } catch (SQLException e) {
                 customResponse(request, e.getMessage());
             }
@@ -167,45 +165,57 @@ public class CustomizableRest extends AbstractVerticle {
 
             customResponse(request, strResponse);
         });
-
         // TODO merger ce2 sortes dinput. Dans le futur on mappera le body pour les POST et PUT
         return allInput;
     }
 
-    private void customDbActions(Map<String, Object> params) throws SQLException {
-        for (Map<String, Object> mapAction : config.getActions()) {
-            if ("sql".equals(mapAction.get("type"))) {
-                String dataSource = (String) mapAction.get("in");
-                DbAccessor inMemory = dbAccessorMap.get(dataSource);
-                String req = (String) mapAction.get("command");
-                if (req.startsWith("select")) {
-                    Map<String, String> resultKeys = new HashMap<>();
-                    List<String> paramName = (List<String>) mapAction.get("param");
-                    List inputQuery = new ArrayList();
-                    if (paramName != null) {
-                        for (String s : paramName) {
-                            Object o = params.get(s);
-                            inputQuery.add(o);
-                        }
-                    }
-                    resultKeys.put("nom", String.class.getName());
-                    resultKeys.put("civ", String.class.getName());
-                    Request request = new Request(req, Collections.emptyMap(), resultKeys);
-                    JsonArray read = inMemory.read(inMemory.connect(), request, inputQuery);
-                    String save = (String) mapAction.get("save");
-                    params.put(save, read);
-                } else if (req.startsWith("insert")) {
-                    // params
-                    List<String> lst = (List<String>) mapAction.get("param");
-                    List reqParam = new ArrayList<>();
-                    for (String key : lst) {
-                        reqParam.add(params.get(key));
-                    }
-                    inMemory.execute(inMemory.connect(), req, reqParam);
-                    String save = (String) mapAction.get("save");
-                    params.put(save, "TODOreturnId");
+    private void customActions(Map<String, Object> IOParams) throws SQLException {
+        for (Map<String, Object> mapActionsToDo : config.getActions()) {
+            if ("sql".equals(mapActionsToDo.get("type"))) {
+                customDbAction(IOParams, mapActionsToDo);
+            } else if ("transform".equals(mapActionsToDo.get("type"))) {
+                // TODO update data
+            }
+        }
+    }
+
+    private void customDbAction(Map<String, Object> IOparams, Map<String, Object> mapActionsToDo) throws SQLException {
+        // Getting datasource alias
+        String dataSource = (String) mapActionsToDo.get("in");
+        DbAccessor dbAccessor = dbAccessorMap.get(dataSource);
+        // Getting SQL Request
+        String req = (String) mapActionsToDo.get("command");
+        if (req.startsWith("select")) {
+            List<String> inputParameterNames = (List<String>) mapActionsToDo.get("param");
+            List inputParameters = new ArrayList();
+            if (inputParameterNames != null) {
+                for (String parameterName : inputParameterNames) {
+                    Object o = IOparams.get(parameterName);
+                    inputParameters.add(o);
                 }
             }
+            // TODO <should not be executed each request>
+            Map<String, String> resultKeys = new HashMap<>();
+            List<String> output = (List<String>) mapActionsToDo.get("output");
+            for (String aColumnToGet : output) {
+                String[] strings = aColumnToGet.split("=");
+                resultKeys.put(strings[0], strings[1]);
+            }
+            Request request = new Request(req, Collections.emptyMap(), resultKeys);
+            // </should not be executed each request>
+            JsonArray read = dbAccessor.read(dbAccessor.connect(), request, inputParameters);
+            String save = (String) mapActionsToDo.get("save");
+            IOparams.put(save, read);
+        } else if (req.startsWith("insert")) {
+            // params
+            List<String> lst = (List<String>) mapActionsToDo.get("param");
+            List reqParam = new ArrayList<>();
+            for (String key : lst) {
+                reqParam.add(IOparams.get(key));
+            }
+            dbAccessor.execute(dbAccessor.connect(), req, reqParam);
+            String save = (String) mapActionsToDo.get("save");
+            IOparams.put(save, "TODOreturnId");
         }
     }
 
@@ -254,7 +264,7 @@ public class CustomizableRest extends AbstractVerticle {
         }*/
     }
 
-    public static Map<String, String> extractUrlParam(String path) {
+    public static Map<String, String> extractQueryParam(String path) {
         final int i = path.indexOf('?');
         if (i == -1) {
             return Collections.emptyMap();

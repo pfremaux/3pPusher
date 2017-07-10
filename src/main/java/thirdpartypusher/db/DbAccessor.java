@@ -57,13 +57,13 @@ public class DbAccessor {
                 while (rs.next()) {
                     JsonObject row = new JsonObject();
                     for (Map.Entry<String, String> entry : request.getExpectedResultPerRow().entrySet()) {
-                        if (String.class.getName().equals(entry.getValue())) {
+                        if (String.class.getSimpleName().equals(entry.getValue())) {
                             String string = rs.getString(entry.getKey());
                             row.put(entry.getKey(), string);
-                        } else if (Long.class.getName().equals(entry.getValue())) {
+                        } else if (Long.class.getSimpleName().equals(entry.getValue())) {
                             long aLong = rs.getLong(entry.getKey());
                             row.put(entry.getKey(), aLong);
-                        } else if (Integer.class.getName().equals(entry.getValue())) {
+                        } else if (Integer.class.getSimpleName().equals(entry.getValue())) {
                             int anInt = rs.getInt(entry.getKey());
                             row.put(entry.getKey(), anInt);
                         } else {

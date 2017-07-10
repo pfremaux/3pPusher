@@ -18,6 +18,9 @@ actions:
   - type: sql
     in: inMemory
     command: select nom, civ from tbl;
+    output:
+      - nom=String
+      - civ=String
     save: tab
   #- sql: inMemory> load> select count(nom) nb from tbl where civ=?:civ;
   #- sql: inMemory> insert> insert into tbl (civ, cnt) values (?:civ, ?:nb);
