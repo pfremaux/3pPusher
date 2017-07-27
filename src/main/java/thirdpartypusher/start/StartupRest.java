@@ -3,21 +3,23 @@ package thirdpartypusher.start;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import thirdpartypusher.db.DbAccessor;
-import thirdpartypusher.db.Request;
-import verticle.rest.ConfigCustom;
-import verticle.rest.ConfigWatcher;
 import verticle.rest.CustomizableRest;
+import verticle.rest.RestDao;
+import verticle.rest.RestService;
+import verticle.rest.config.ConfigCustom;
+import verticle.rest.config.ConfigWatcher;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class StartupRest {
@@ -32,54 +34,33 @@ public class StartupRest {
         new StartupRest().start();
     }
 
-    private final String RQT_CREATE_TBL = "CREATE TABLE personnes ( id INTEGER IDENTITY, nom VARCHAR(32), prenom VARCHAR(32))";
-    private final String RQT_CREATE_TBL_TABLE = "CREATE TABLE tbl ( id INTEGER IDENTITY, cnt INTEGER default 0, civ VARCHAR(32), nom VARCHAR(32))";
-    private final String RQT_INSERT = "insert into tbl (civ, cnt) values (?, ?);";
-    private final String RQT_SELECT = "SELECT * FROM tbl";
-
     public void start() throws IOException, SQLException {
         //InputSetupManager optionsManager = new InputSetupManager<>();
         Map<String, DbAccessor> dbAccessorMap = loadBootstrapConfigForDatabase();
-
-        customInit(dbAccessorMap);
         loadRestServices(dbAccessorMap);
     }
 
-
-    private Map<String, DbAccessor> loadBootstrapConfigForDatabase() throws IOException {
+    private Map<String, DbAccessor> loadBootstrapConfigForDatabase() throws IOException, SQLException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         Map<String, Object> mapConf = mapper.readValue(new File("./bootstrapConfig/database.yaml"), Map.class);
         Map<String, DbAccessor> dbAccessorMap = new HashMap<>();
         for (Map.Entry<String, Object> entry : mapConf.entrySet()) {
             System.out.println(entry.getKey() + " = " + entry.getValue());
-            Map<String, String> dbConf = (Map<String, String>) entry.getValue();
-            String driver = dbConf.get("driver");
-            String uri = dbConf.get("uri");
-            String login = dbConf.get("login");
-            String password = dbConf.get("password");
+            Map<String, Object> dbConf = (Map<String, Object>) entry.getValue();
+            String driver = (String) dbConf.get("driver");
+            String uri = (String) dbConf.get("uri");
+            String login = (String) dbConf.get("login");
+            String password = (String) dbConf.get("password");
             DbAccessor dbAccessor = new DbAccessor(driver, uri, login, password);
             dbAccessorMap.put(entry.getKey(), dbAccessor);
+            List<String> script = (List<String>) dbConf.get("script");
+            Connection inMemory = dbAccessor.connect();
+            for (String sqlLine : script) {
+                dbAccessor.execute(inMemory, sqlLine, Collections.emptyList());
+            }
+            dbAccessor.disconnect(inMemory);
         }
         return dbAccessorMap;
-    }
-
-    private void customInit(Map<String, DbAccessor> dbAccessorMap) throws SQLException {
-        Connection inMemory = dbAccessorMap.get("inMemory").connect();
-        List params = Arrays.asList("mr", 1);
-        Map<String, String> expRes = new HashMap<>();
-        expRes.put("civ", String.class.getName());
-        expRes.put("cnt", String.class.getName());
-        Request request = new Request(RQT_SELECT, Collections.emptyMap(), expRes);
-        dbAccessorMap.get("inMemory").execute(inMemory, RQT_CREATE_TBL_TABLE, Collections.emptyList());
-        dbAccessorMap.get("inMemory").execute(inMemory, RQT_INSERT, params);
-        JsonArray result = dbAccessorMap.get("inMemory").read(inMemory, request, Collections.emptyList());
-        dbAccessorMap.get("inMemory").disconnect(inMemory);
-        for (Object o : result) {
-            JsonObject map = (JsonObject) o;
-            for (Map.Entry<String, Object> entry : map) {
-                System.out.println(entry.getKey() + " = " + entry.getValue());
-            }
-        }
     }
 
     /* ex
@@ -111,10 +92,18 @@ public class StartupRest {
         Map<String, String> filenamePerDeploymentId = new ConcurrentHashMap<>();
         for (File fileConfig : filesConfig) {
             final ConfigCustom config = mapper.readValue(fileConfig, ConfigCustom.class);
+            config.validate();
             final String fileConfigName = fileConfig.getName();
-            vertx.deployVerticle(new CustomizableRest(config, router, dbAccessorMap), handler -> filenamePerDeploymentId.put(fileConfigName, handler.result()));
+            RestDao restDao = new RestDao(dbAccessorMap);
+            RestService restService = new RestService(restDao, config);
+            vertx.deployVerticle(new CustomizableRest(config, router, restService), handler -> filenamePerDeploymentId.put(fileConfigName, handler.result()));
         }
-        // TODO watcher here
+        prepareAndLaunchWatcher(dbAccessorMap, mapper, router, filenamePerDeploymentId);
+    }
+
+
+    protected void prepareAndLaunchWatcher(Map<String, DbAccessor> dbAccessorMap, ObjectMapper mapper, Router router, Map<String, String> filenamePerDeploymentId) throws IOException {
+        // TODO watcher ?
         ConfigWatcher configWatcher = new ConfigWatcher("./config", path -> {
             /*String strPath = path.toString();
             if (strPath.endsWith("yaml")) {
@@ -143,7 +132,9 @@ public class StartupRest {
                     //}
                     //});
                     //loadRestConfigFiles(dbAccessorMap, mapper);
-                    vertx.deployVerticle(new CustomizableRest(config, router, dbAccessorMap), handler -> filenamePerDeploymentId.put(path.toFile().getName(), handler.result()));
+                    RestDao restDao = new RestDao(dbAccessorMap);
+                    RestService restService = new RestService(restDao, config);
+                    vertx.deployVerticle(new CustomizableRest(config, router, restService), handler -> filenamePerDeploymentId.put(path.toFile().getName(), handler.result()));
                 } catch (IOException e) {
                     System.err.println("Error occurent while loading the new version of " + path);
                     e.printStackTrace();
@@ -159,6 +150,5 @@ public class StartupRest {
         Thread thread = new Thread(configWatcher);
         thread.start();
     }
-
 
 }

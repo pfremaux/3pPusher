@@ -13,10 +13,6 @@ public class DbAccessor {
     private String login;
     private String pwd;
 
-    public DbAccessor() {
-
-    }
-
     public DbAccessor(String driver, String uri, String login, String pwd) {
         this.driver = driver;
         this.uri = uri;

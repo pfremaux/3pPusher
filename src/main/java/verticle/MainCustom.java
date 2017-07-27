@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
-import verticle.rest.ConfigCustom;
+import verticle.rest.RestDao;
+import verticle.rest.config.ConfigCustom;
 import verticle.rest.CustomizableRest;
 
 import java.io.File;
@@ -20,7 +21,8 @@ public class MainCustom {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         ConfigCustom config = mapper.readValue(new File("./config/hello.tyaml"), ConfigCustom.class);
         final Router router = Router.router(vertx);
-        vertx.deployVerticle(new CustomizableRest(config, router, Collections.emptyMap()));
+
+        //vertx.deployVerticle(new CustomizableRest(config, router, Collections.emptyMap(), restDao));
     }
 
     public static void main(String... s) throws IOException {

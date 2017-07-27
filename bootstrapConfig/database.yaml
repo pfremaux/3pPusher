@@ -3,3 +3,6 @@ inMemory:
   uri: jdbc:hsqldb:mem:testHSQLDB
 #  login: root
  # password: root
+  script:
+    - CREATE TABLE tbl ( id INTEGER IDENTITY, cnt INTEGER default 0, civ VARCHAR(32), nom VARCHAR(32));
+    - insert into tbl (civ, cnt) values ('mr', 1);
