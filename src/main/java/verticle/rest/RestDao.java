@@ -36,6 +36,8 @@ public class RestDao {
             // TODO <should not be executed each request>
             Map<String, String> resultKeys = new HashMap<>();
             Map<String, String> output = (Map<String, String>) mapActionsToDo.get("output");
+            // TODO builder une fois pour toute au moment du parsing et non a chaque request
+            // TODO on ne serait pas en train de recopier lq mme chose sans utilité ???
             for (Map.Entry<String, String> keyValue : output.entrySet()) {
                 resultKeys.put(keyValue.getKey(), keyValue.getValue());
             }
@@ -51,7 +53,7 @@ public class RestDao {
             for (String key : lst) {
                 reqParam.add(IOparams.get(key));
             }
-            dbAccessor.execute(dbAccessor.connect(), req, reqParam);
+            dbAccessor.write(dbAccessor.connect(), req, reqParam);
             String save = (String) mapActionsToDo.get("save");
             IOparams.put(save, "TODOreturnId");
         }

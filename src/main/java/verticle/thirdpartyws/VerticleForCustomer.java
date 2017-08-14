@@ -2,10 +2,10 @@ package verticle.thirdpartyws;
 
 
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
+import org.apache.commons.lang3.StringUtils;
 import thirdpartypusher.Cache;
 
 public class VerticleForCustomer extends AbstractVerticle {
@@ -42,8 +42,11 @@ public class VerticleForCustomer extends AbstractVerticle {
             final String id = message.getString("id");
             final JsonObject data = message.getJsonObject("data");
             if (Cache.idToWs.containsKey(id)) {// TODO optim du cache
-                // TODO gerer le cas ou data est null
-                Cache.idToWs.get(id).writeTextMessage(data.toString());
+                if (data == null || StringUtils.isEmpty(data.toString())) {
+                    Cache.idToWs.get(id).writeTextMessage(StringUtils.EMPTY);
+                } else {
+                    Cache.idToWs.get(id).writeTextMessage(data.toString());
+                }
                 return 200;
             } else {
                 return 400;

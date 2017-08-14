@@ -65,12 +65,12 @@ public class ConfigCustom {
         }
 
         for (Map<String, Object> action : actions) {
-            Object param = action.get("param");
+                Object param = action.get("param");
             if (param != null) {
                 Collection<String> listParam = (Collection<String>) param;
                 for (String aParameterName : listParam) {
                     if (!allParameters.contains(aParameterName)) {
-                        throw new RuntimeException(aParameterName + " does not exist. It can't be used as a input parameter.");
+                        throw new RuntimeException(aParameterName + " does not exist. It can't be used as a input parameter for " + this.toSimpleString());
                     }
                 }
             }
@@ -90,12 +90,15 @@ public class ConfigCustom {
                             throw new RuntimeException(key + " not found as output in query." + strCommand);
                         }
                     }
+                    // TODO builder une fois pour toute ici par exemple ou en dehors des if else
                 } else if (strCommand.startsWith("insert")) {
 
                 } else if (strCommand.startsWith("delete")) {
 
                 } else if (strCommand.startsWith("update")) {
 
+                } else {
+                    throw new RuntimeException("Unrecognized SQL command : " + strCommand);
                 }
             }
         }

@@ -33,13 +33,20 @@ public class DbAccessor {
         return bdd;
     }
 
-    public int execute(Connection c, String req, List params) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(req)) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            return ps.executeUpdate();
+    public int write(Connection c, String req, List params) throws SQLException {
+        // TODO
+        PreparedStatement ps;
+        if (req.startsWith("insert") || req.startsWith("update")) {
+            ps = c.prepareStatement(req, PreparedStatement.RETURN_GENERATED_KEYS);
+        } else {
+            ps = c.prepareStatement(req);
         }
+
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+        ps.close();
+        return ps.executeUpdate();
     }
 
     public JsonArray read(Connection c, Request request, List params) throws SQLException {

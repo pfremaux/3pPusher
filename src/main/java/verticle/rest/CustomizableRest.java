@@ -115,7 +115,6 @@ public class CustomizableRest extends AbstractVerticle {
             strResponse = restService.buildFormattedResponse(allInput);
             customResponse(request, strResponse);
         });
-        // TODO merger ce2 sortes dinput. Dans le futur on mappera le body pour les POST et PUT
         return allInput;
     }
 

@@ -56,7 +56,7 @@ public class StartupRest {
             List<String> script = (List<String>) dbConf.get("script");
             Connection inMemory = dbAccessor.connect();
             for (String sqlLine : script) {
-                dbAccessor.execute(inMemory, sqlLine, Collections.emptyList());
+                dbAccessor.write(inMemory, sqlLine, Collections.emptyList());
             }
             dbAccessor.disconnect(inMemory);
         }

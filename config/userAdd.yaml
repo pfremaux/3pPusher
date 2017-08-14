@@ -1,13 +1,12 @@
 # First configuration
 ---
-path: /users
+path: /users/:name
 method: POST
 # port: 8080
-# ca marche ça ? juste apres
-# urlParam:
-#     name: string
-# query:
-#  civ: string:mandatory
+urlParam:
+    name: string
+query:
+  civ: string
 actions:
   - type: sql
     in: inMemory
