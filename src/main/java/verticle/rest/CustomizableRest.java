@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 public class CustomizableRest extends AbstractVerticle {
 
     private final static Logger LOGGER = Logger.getLogger(CustomizableRest.class.getName());
+    private boolean prod = false;
 
     private final ConfigCustom config;
     private final Router router;
@@ -81,7 +82,9 @@ public class CustomizableRest extends AbstractVerticle {
         route./*consumes("application/json").*/handler(rc -> {
             //rc.response().setStatusCode(200).end();
             HttpServerRequest request = rc.request();
+
             consumeRequest(request);
+
         });
         LOGGER.info("Verticle " + CustomizableRest.class.getSimpleName() + " loaded : " + config.toSimpleString());
     }
@@ -100,6 +103,7 @@ public class CustomizableRest extends AbstractVerticle {
         }
         request.bodyHandler(bh -> {
             // TODO valider en amont si la request expect un body
+            // Map input request
             if (bh.length() > 0) {
                 final JsonObject body = bh.toJsonObject();
                 for (Map.Entry<String, Object> entry : body) {
@@ -107,13 +111,21 @@ public class CustomizableRest extends AbstractVerticle {
                 }
             }
             final String strResponse;
+            // do actions
             try {
                 restService.customActions(allInput);
+                // Prepare response
+                strResponse = restService.buildFormattedResponse(allInput);
+                customResponse(request, 200, strResponse);
             } catch (SQLException e) {
-                customResponse(request, e.getMessage());
+                LOGGER.severe(e.getMessage() + " II SQL state : " + e.getSQLState());
+                String returnedMessage = "error";
+                if (!prod) {
+                    returnedMessage = e.getMessage();
+                }
+                customResponse(request, 500, returnedMessage);
             }
-            strResponse = restService.buildFormattedResponse(allInput);
-            customResponse(request, strResponse);
+
         });
         return allInput;
     }
@@ -138,9 +150,9 @@ public class CustomizableRest extends AbstractVerticle {
     }
 
 
-    private void customResponse(HttpServerRequest request, String strResponse) {
-        request.response().endHandler(h -> {
-            System.out.println(h);
+    private void customResponse(HttpServerRequest request, int statusCode, String strResponse) {
+        request.response().setStatusCode(statusCode).endHandler(h -> {
+            System.out.println("customResponse : " + h);
         }).putHeader("Content-length", strResponse.length() + "").write(strResponse).end();
             /*JsonObject obj = h.toJsonObject();
             String id = obj.getString("id");

@@ -1,0 +1,24 @@
+# First configuration
+---
+path: /clients/:name
+method: POST
+# port: 8080
+urlParam:
+    name: string
+query:
+  civ: string
+body:
+  firstName: string
+  lastName: string
+  birth: date
+actions:
+  - type: sql
+    in: postgres
+    command: insert into client (first_name, last_name, birth) values (?, ?, ?);
+    param:
+      - firstName
+      - lastName
+      - birth
+    save: id
+response:
+  txt: :id

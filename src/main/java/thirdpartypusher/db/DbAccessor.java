@@ -33,7 +33,7 @@ public class DbAccessor {
         return bdd;
     }
 
-    public int write(Connection c, String req, List params) throws SQLException {
+    public int writeAndGetGeneratedKey(Connection c, String req, List params) throws SQLException {
         // TODO
         PreparedStatement ps;
         if (req.startsWith("insert") || req.startsWith("update")) {
@@ -45,7 +45,37 @@ public class DbAccessor {
         for (int i = 0; i < params.size(); i++) {
             ps.setObject(i + 1, params.get(i));
         }
-        ps.close();
+        ps.executeUpdate();
+        try {
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getInt(1);
+            } else {
+                return -1;
+            }
+        } catch (SQLException e) {
+            // TODO log
+            e.printStackTrace();
+            return -2;
+        } finally {
+            ps.close();
+        }
+    }
+
+    public int writeAndGetNumberUpdated(Connection c, String req, List params, Map<String, String> knownTypes) throws SQLException {
+        // TODO same here ?
+        PreparedStatement ps;
+        if (req.startsWith("insert") || req.startsWith("update")) {
+            ps = c.prepareStatement(req);
+        } else {
+            ps = c.prepareStatement(req);
+        }
+
+        for (int i = 0; i < params.size(); i++) {
+            Object x = params.get(i);
+            // if (x instanceof Date)
+            ps.setObject(i + 1, x);
+        }
         return ps.executeUpdate();
     }
 

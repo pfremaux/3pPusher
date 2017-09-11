@@ -11,7 +11,9 @@ actions:
     in: inMemory
     command: select nom, civ from tbl where nom = ?;
     param:
-      - name
+          - name
+    output:
+      nom: String
     save: tab
 response:
   txt: :tab

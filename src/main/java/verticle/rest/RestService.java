@@ -67,7 +67,7 @@ public class RestService {
     public void customActions(Map<String, Object> IOParams) throws SQLException {
         for (Map<String, Object> mapActionsToDo : config.getActions()) {
             if (SUPPORTED_ACTION.SQL.format().equals(mapActionsToDo.get("type"))) {
-                restDao.customDbAction(IOParams, mapActionsToDo);
+                restDao.customDbAction(IOParams, mapActionsToDo, config.getKnownTypes());
             } else if (SUPPORTED_ACTION.TRANSFORM.format().equals(mapActionsToDo.get("type"))) {
                 // TODO update data
             }

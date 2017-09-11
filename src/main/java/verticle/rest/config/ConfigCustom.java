@@ -14,9 +14,11 @@ public class ConfigCustom {
     private String method = "GET";
     private String path = "/";
     private Map<String, String> urlParam = Collections.emptyMap();
+    private Map<String, String> body = Collections.emptyMap();
     private Map<String, String> query = Collections.emptyMap();
     private HashMap<String, Object> response = new HashMap<>();
     private List<Map<String, Object>> actions = new ArrayList<>();
+    private Map<String, String> knownTypes = new HashMap<>();
 
     public String toSimpleString() {
         return method + " " + host + ":" + port + path;
@@ -60,12 +62,15 @@ public class ConfigCustom {
         }
         allParameters.addAll(inputInUrl);
         allParameters.addAll(query.keySet());
+        allParameters.addAll(body.keySet());
+        knownTypes.putAll(body);
+
         if (!SUPPORTED_HTTP_METHOD.contains(method)) {
             throw new RuntimeException(method + " is not a valid HTTP method.");
         }
 
         for (Map<String, Object> action : actions) {
-                Object param = action.get("param");
+            final Object param = action.get("param");
             if (param != null) {
                 Collection<String> listParam = (Collection<String>) param;
                 for (String aParameterName : listParam) {
@@ -84,7 +89,9 @@ public class ConfigCustom {
                 if (strCommand.startsWith("select")) {
                     String columns = strCommand.substring("select".length(), strCommand.indexOf("from")).trim();
                     List<String> strings = Arrays.asList(columns.replaceAll(" ", "").split(","));
+                    // TODO output may be null ?
                     Map<String, String> output = (Map<String, String>) action.get("output");
+                    knownTypes.putAll(output);
                     for (String key : output.keySet()) {
                         if (!strings.contains(key)) {
                             throw new RuntimeException(key + " not found as output in query." + strCommand);
@@ -166,5 +173,22 @@ public class ConfigCustom {
 
     public void setHost(String host) {
         this.host = host;
+    }
+
+    public Map<String, String> getBody() {
+        return body;
+    }
+
+    public void setBody(Map<String, String> body) {
+        this.body = body;
+    }
+
+
+    public Map<String, String> getKnownTypes() {
+        return knownTypes;
+    }
+
+    public void setKnownTypes(Map<String, String> knownTypes) {
+        this.knownTypes = knownTypes;
     }
 }

@@ -1,6 +1,7 @@
 package verticle.rest;
 
 import io.vertx.core.json.JsonArray;
+import org.apache.commons.lang3.StringUtils;
 import thirdpartypusher.db.DbAccessor;
 import thirdpartypusher.db.Request;
 
@@ -18,7 +19,7 @@ public class RestDao {
         this.dbAccessorMap = dbAccessorMap;
     }
 
-    public void customDbAction(Map<String, Object> IOparams, Map<String, Object> mapActionsToDo) throws SQLException {
+    public void customDbAction(Map<String, Object> IOparams, Map<String, Object> mapActionsToDo, Map<String, String> knownTypes) throws SQLException {
         // Getting datasource alias
         String dataSource = (String) mapActionsToDo.get("in");
         DbAccessor dbAccessor = dbAccessorMap.get(dataSource);
@@ -49,13 +50,19 @@ public class RestDao {
         } else if (req.startsWith("insert")) {
             // params
             List<String> lst = (List<String>) mapActionsToDo.get("param");
+            // TODO keep key and values in a map instead : key will be used to match  with the knownTypes
             List reqParam = new ArrayList<>();
             for (String key : lst) {
                 reqParam.add(IOparams.get(key));
             }
-            dbAccessor.write(dbAccessor.connect(), req, reqParam);
-            String save = (String) mapActionsToDo.get("save");
-            IOparams.put(save, "TODOreturnId");
+            String keyWhereToSaveTheValue = (String) mapActionsToDo.get("save");
+            if (StringUtils.isBlank(keyWhereToSaveTheValue)) {
+
+                dbAccessor.writeAndGetNumberUpdated(dbAccessor.connect(), req, reqParam, knownTypes);
+            } else {
+                int id = dbAccessor.writeAndGetGeneratedKey(dbAccessor.connect(), req, reqParam);
+                IOparams.put(keyWhereToSaveTheValue, id);
+            }
         }
     }
 

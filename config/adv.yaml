@@ -9,14 +9,14 @@ query:
   civ: string:mandatory
 actions:
   - type: sql
-    in: inMemory
+    in: postgres
     command: insert into tbl (nom, civ) values (?, ?);
     param:
       - name
       - civ
     save: tab
   - type: sql
-    in: inMemory
+    in: postgres
     command: select nom, civ from tbl;
     output:
       nom: String

@@ -9,7 +9,7 @@ query:
   civ: string
 actions:
   - type: sql
-    in: inMemory
+    in: postgres
     command: insert into tbl (nom, civ) values (?, ?);
     param:
       - name

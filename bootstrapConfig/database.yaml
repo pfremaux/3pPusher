@@ -1,8 +1,17 @@
 inMemory:
   driver: org.hsqldb.jdbcDriver
   uri: jdbc:hsqldb:mem:testHSQLDB
-#  login: root
- # password: root
+  # login: root
+  # password: root
   script:
     - CREATE TABLE tbl ( id INTEGER IDENTITY, cnt INTEGER default 0, civ VARCHAR(32), nom VARCHAR(32));
     - insert into tbl (civ, cnt) values ('mr', 1);
+postgres:
+  driver: org.postgresql.Driver
+  uri: jdbc:postgresql://192.168.2.19:5432/postgres
+  login: postgres
+  # password: root
+  script:
+    - CREATE TABLE IF NOT EXISTS tbl ( id SERIAL, cnt INTEGER default 0, civ VARCHAR(32), nom VARCHAR(32));
+    - insert into tbl (civ, cnt) values ('mr', 1);
+    - CREATE TABLE IF NOT EXISTS client ( id SERIAL, first_name VARCHAR(32), last_name VARCHAR(32), birth date);
