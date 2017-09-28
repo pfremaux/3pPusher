@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 public class ConfigCustom {
 
     public static final List<String> SUPPORTED_HTTP_METHOD = Arrays.asList("GET", "POST", "PUT", "DELETE");
-    private static Pattern pathPattern = Pattern.compile("[/a-z0-9:]+"); // TODO améliorer
+    private static Pattern pathPattern = Pattern.compile("[/a-zA-Z0-9:]+"); // TODO améliorer
     private static Pattern pathParameterPattern = Pattern.compile("\\:[a-z0-9]+");
 
     private String host = "localhost";
@@ -50,7 +50,7 @@ public class ConfigCustom {
         if (inputInUrl.size() > nbUrlParam) {
             for (String input : inputInUrl) {
                 if (!urlParam.containsKey(input)) {
-                    throw new RuntimeException(input + " is not defined in urlParam Key.");
+                    throw new RuntimeException(input + " is not defined in urlParam Key for path '" + path + "'.");
                 }
             }
         } else if (inputInUrl.size() < nbUrlParam) {
@@ -63,7 +63,9 @@ public class ConfigCustom {
         allParameters.addAll(inputInUrl);
         allParameters.addAll(query.keySet());
         allParameters.addAll(body.keySet());
+        // Eclaircir le role de known types
         knownTypes.putAll(body);
+        knownTypes.putAll(urlParam);
 
         if (!SUPPORTED_HTTP_METHOD.contains(method)) {
             throw new RuntimeException(method + " is not a valid HTTP method.");
@@ -97,6 +99,7 @@ public class ConfigCustom {
                             throw new RuntimeException(key + " not found as output in query." + strCommand);
                         }
                     }
+                    // TODO enforcer ou warner qu'il faut preciser la cle save pour dire ou sauvegarder
                     // TODO builder une fois pour toute ici par exemple ou en dehors des if else
                 } else if (strCommand.startsWith("insert")) {
 

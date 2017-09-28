@@ -15,3 +15,4 @@ postgres:
     - CREATE TABLE IF NOT EXISTS tbl ( id SERIAL, cnt INTEGER default 0, civ VARCHAR(32), nom VARCHAR(32));
     - insert into tbl (civ, cnt) values ('mr', 1);
     - CREATE TABLE IF NOT EXISTS client ( id SERIAL, first_name VARCHAR(32), last_name VARCHAR(32), birth date);
+°    - CREATE TABLE IF NOT EXISTS book ( id SERIAL, title VARCHAR(32), author VARCHAR(32));

@@ -28,10 +28,19 @@ public class RestDao {
         if (req.startsWith("select")) {
             List<String> inputParameterNames = (List<String>) mapActionsToDo.get("param");
             List inputParameters = new ArrayList();
+            LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+            Map<String, Class> expectedParameters = new HashMap<>();
             if (inputParameterNames != null) {
                 for (String parameterName : inputParameterNames) {
                     Object o = IOparams.get(parameterName);
                     inputParameters.add(o);
+                    parameters.put(parameterName, o);
+                    String strType = knownTypes.get(parameterName);
+                    Class type = String.class;
+                    if (Integer.class.getSimpleName().equals(strType)) {
+                        type = Integer.class;
+                    }
+                    expectedParameters.put(parameterName, type);
                 }
             }
             // TODO <should not be executed each request>
@@ -42,9 +51,9 @@ public class RestDao {
             for (Map.Entry<String, String> keyValue : output.entrySet()) {
                 resultKeys.put(keyValue.getKey(), keyValue.getValue());
             }
-            Request request = new Request(req, Collections.emptyMap(), resultKeys);
+            Request request = new Request(req, expectedParameters, resultKeys);
             // </should not be executed each request>
-            JsonArray read = dbAccessor.read(dbAccessor.connect(), request, inputParameters);
+            JsonArray read = dbAccessor.read(dbAccessor.connect(), request, parameters);
             String save = (String) mapActionsToDo.get("save");
             IOparams.put(save, read);
         } else if (req.startsWith("insert")) {

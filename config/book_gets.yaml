@@ -1,0 +1,22 @@
+# First configuration
+---
+path: /books/:nbElem/:page
+method: GET
+# port: 8080
+urlParam:
+    nbElem: Integer
+    page: Integer
+actions:
+  - type: sql
+    in: postgres
+    command: select title, author from book limit ? offset ?;
+    param:
+          - nbElem
+          - page
+    output:
+          title: String
+          author: String
+    save: bookList
+response:
+  json:
+    collection: :bookList

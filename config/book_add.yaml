@@ -1,0 +1,18 @@
+# First configuration
+---
+path: /books
+method: POST
+# port: 8080
+body:
+    title: string
+    author: string
+actions:
+  - type: sql
+    in: postgres
+    command: insert into book (title, author) values (?, ?);
+    param:
+      - title
+      - author
+    save: id
+response:
+  txt: :id

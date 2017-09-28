@@ -4,6 +4,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.sql.*;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -79,10 +80,16 @@ public class DbAccessor {
         return ps.executeUpdate();
     }
 
-    public JsonArray read(Connection c, Request request, List params) throws SQLException {
+    public JsonArray read(Connection c, Request request, LinkedHashMap<String, Object> params) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(request.getRequest())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
+            int idx = 1;
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                Class aClass = request.getExpectedParameters().get(entry.getKey());
+                if (Integer.class.equals(aClass)) {
+                    ps.setInt(idx++, Integer.parseInt(entry.getValue().toString()));
+                } else {
+                    ps.setObject(idx++, entry.getValue());
+                }
             }
             ps.execute();
             try (ResultSet rs = ps.getResultSet()) {

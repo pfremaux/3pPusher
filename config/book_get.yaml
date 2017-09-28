@@ -1,0 +1,20 @@
+# First configuration
+---
+path: /books/:id
+method: GET
+# port: 8080
+urlParam:
+    id: int
+actions:
+  - type: sql
+    in: postgres
+    command: select title, author from book where id = ?;
+    param:
+      - id
+    output:
+          title: String
+          author: String
+response:
+  json:
+    title: :title
+    author: :author
