@@ -10,7 +10,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import logger.SimpleLogFormat;
-import thirdpartypusher.start.InputSetupManager;
+import restserver.start.InputSetupManager;
 import verticle.rest.config.ConfigCustom;
 
 import java.sql.SQLException;
@@ -22,17 +22,17 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class CustomizableRest extends AbstractVerticle {
+public class WebService extends AbstractVerticle {
 
-    private final static Logger LOGGER = Logger.getLogger(CustomizableRest.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(WebService.class.getName());
     private boolean prod = false;
 
     private final ConfigCustom config;
     private final Router router;
 
-    private RestService restService;
+    private final RestService restService;
 
-    public CustomizableRest(ConfigCustom config, Router router, RestService restService) {
+    public WebService(ConfigCustom config, Router router, RestService restService) {
         this.config = config;
         this.router = router;
         this.restService = restService;
@@ -54,7 +54,7 @@ public class CustomizableRest extends AbstractVerticle {
             handlers[0].setFormatter(new SimpleLogFormat());
             //LOGGER.removeHandler(handlers[0]);
         }*/
-        LOGGER.info("Loading verticle " + CustomizableRest.class.getSimpleName());
+        LOGGER.info("Loading verticle " + WebService.class.getSimpleName());
         InputSetupManager<HttpServerOptions> optionsManager = new InputSetupManager<>();
         final Vertx vertx = getVertx();
 
@@ -79,51 +79,76 @@ public class CustomizableRest extends AbstractVerticle {
         } else {
             throw new RuntimeException("Unknown HTTP method " + config.getMethod() + " configuration file.");
         }
+
+         /*final Map<String, Object> response = config.getResponse();
+        if (response != null && !response.isEmpty()) {
+            final String responseType = response.keySet().iterator().next();
+            if ("json".equals(responseType)) {
+                route.consumes("application/json");
+            } else if ("yaml".equals(responseType)) {
+                route.consumes("text/yaml");
+            } else if ("txt".equals(responseType)) {
+                route.consumes("text/plain");
+            }
+        }
+        route.handler(rc -> {
+            HttpServerRequest request = rc.request();
+            consumeRequest(request);
+
+        });*/
+
         route./*consumes("application/json").*/handler(rc -> {
             //rc.response().setStatusCode(200).end();
             HttpServerRequest request = rc.request();
 
             consumeRequest(request);
 
+
         });
-        LOGGER.info("Verticle " + CustomizableRest.class.getSimpleName() + " loaded : " + config.toSimpleString());
+
+        LOGGER.info("Verticle " + WebService.class.getSimpleName() + " loaded : " + config.toSimpleString());
     }
 
 
     private Map<String, Object> consumeRequest(HttpServerRequest request) {
-        Map<String, Object> allInput = new HashMap<>();
-        String urlParam;
-        String uri = request.uri();
-        Map<String, String> queryParams = extractQueryParam(uri);
+        final Map<String, Object> allInput = new HashMap<>();
+        final String uri = request.uri();
+        final Map<String, String> queryParams = extractQueryParam(uri);
         LOGGER.finest(() -> "qparam = " + queryParams);
         allInput.putAll(queryParams);
+        String urlParam;
         for (Map.Entry<String, String> entry : config.getUrlParam().entrySet()) {
             urlParam = request.getParam(entry.getKey());
             allInput.put(entry.getKey(), urlParam);
         }
         request.bodyHandler(bh -> {
             // TODO valider en amont si la request expect un body
-            // Map input request
-            if (bh.length() > 0) {
-                final JsonObject body = bh.toJsonObject();
-                for (Map.Entry<String, Object> entry : body) {
-                    allInput.put(entry.getKey(), entry.getValue());
-                }
-            }
-            final String strResponse;
             // do actions
             try {
-                restService.customActions(allInput);
+                // Map input request
+                if (bh.length() > 0) {
+                    final JsonObject body = bh.toJsonObject();
+                    for (Map.Entry<String, Object> entry : body) {
+                        allInput.put(entry.getKey(), entry.getValue());
+                    }
+                }
+                final String strResponse;
+
+                restService.executeCustomActions(allInput);
                 // Prepare response
                 strResponse = restService.buildFormattedResponse(allInput);
-                customResponse(request, 200, strResponse);
+                returnResponse(request, 200, strResponse);
+            } catch (BadInputException e) {
+                returnResponse(request, 400, e.toString());
             } catch (SQLException e) {
                 LOGGER.severe(e.getMessage() + " II SQL state : " + e.getSQLState());
                 String returnedMessage = "error";
                 if (!prod) {
                     returnedMessage = e.getMessage();
                 }
-                customResponse(request, 500, returnedMessage);
+                returnResponse(request, 500, returnedMessage);
+            } catch (RuntimeException re) {
+                returnResponse(request, 500, re.getMessage());
             }
 
         });
@@ -150,27 +175,10 @@ public class CustomizableRest extends AbstractVerticle {
     }
 
 
-    private void customResponse(HttpServerRequest request, int statusCode, String strResponse) {
+    private void returnResponse(HttpServerRequest request, int statusCode, String strResponse) {
         request.response().setStatusCode(statusCode).endHandler(h -> {
-            System.out.println("customResponse : " + h);
+            System.out.println("returnResponse : " + h);
         }).putHeader("Content-length", strResponse.length() + "").write(strResponse).end();
-            /*JsonObject obj = h.toJsonObject();
-            String id = obj.getString("id");
-            System.out.println("Pusher> reçu du Customer l'id " + id);
-            Cache.subscriptionsFromCustomer.add(id);*/
-            /*
-                rc.response().setStatusCode(200).end();
-            });
-            /*HttpServerRequest request = rc.request();
-            String uri = request.uri();
-            System.out.println(uri);
-            request.handler(h -> {
-            /*JsonObject obj = h.toJsonObject();
-            String id = obj.getString("id");
-            System.out.println("Pusher> reçu du Customer l'id " + id);
-            Cache.subscriptionsFromCustomer.add(id);*//*
-                rc.response().setStatusCode(200).end();
-            });*/
     }
 
 }

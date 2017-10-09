@@ -1,19 +1,16 @@
 # First configuration
 ---
 path: /books/:id
-method: GET
+method: DELETE
 # port: 8080
 urlParam:
     id: Integer[1-6]
 actions:
   - type: sql
     in: postgres
-    command: select title, author from book where id = ?;
+    command: delete from book where id = ?;
     param:
       - id
-    output:
-          title: String
-          author: String
     save: book
 response:
   json:

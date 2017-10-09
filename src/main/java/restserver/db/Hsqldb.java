@@ -1,30 +1,23 @@
-package thirdpartypusher.db;
+package restserver.db;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
-public final class Postgresql extends DbAccessor {
-    private final static String DRIVER_BDD = "org.postgresql.Driver";
-    private final static String URL = "jdbc:postgresql://192.168.2.19:5432/postgres";
-    private final String RQT_DROP = "DROP TABLE personnes;";
-    private final String RQT_CREATE_TBL = "CREATE TABLE personnes ( id SERIAL, nom VARCHAR(32), prenom VARCHAR(32));";
-    private final String RQT_INSERT = "INSERT INTO personnes (nom,prenom) VALUES('NOM', 'PRENOM');";
-    private final String RQT_SELECT = "SELECT * FROM personnes;";
+public final class Hsqldb extends DbAccessor {
+    private final static String DRIVER_BDD = "org.hsqldb.jdbcDriver";
+    private final static String URL = "jdbc:hsqldb:mem:testHSQLDB";
+    private final String RQT_CREATE_TBL = "CREATE TABLE personnes ( id INTEGER IDENTITY, nom VARCHAR(32), prenom VARCHAR(32))";
+    private final String RQT_INSERT = "INSERT INTO personnes (nom,prenom) VALUES('NOM', 'PRENOM')";
+    private final String RQT_SELECT = "SELECT * FROM personnes";
 
 
-    public Postgresql(String driver, String uri, String login, String pwd) throws ClassNotFoundException {
+    public Hsqldb(String driver, String uri, String login, String pwd) throws ClassNotFoundException {
         super(driver, uri, login, pwd);
     }
 
     public static void main(String[] args) throws ClassNotFoundException {
-        Class.forName(DRIVER_BDD);
-        Postgresql testConnexion = new Postgresql(DRIVER_BDD, URL, "postgres", null);
-
+        Hsqldb testConnexion = new Hsqldb(DRIVER_BDD, URL, null, null);
         try {
             Connection c = testConnexion.connect();
-            testConnexion.deleteTableDeTest(c);
             testConnexion.creerTableDeTest(c);
             testConnexion.insererDonneeTest(c);
             testConnexion.lireDonneeTest(c);
@@ -56,13 +49,11 @@ public final class Postgresql extends DbAccessor {
 
     }
 
-    private void deleteTableDeTest(Connection c) throws SQLException {
-        final PreparedStatement ps = c.prepareStatement(RQT_DROP);
-        ps.execute();
-
-    }
-
     public void disconnect(Connection c) throws SQLException {
+        try (Statement st = c.createStatement()) {
+            // Nécessaire pour clôturer proprement
+            st.execute("SHUTDOWN");
+        }
         super.disconnect(c);
     }
 

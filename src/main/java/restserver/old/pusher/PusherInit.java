@@ -1,8 +1,8 @@
-package thirdpartypusher.old.pusher;
+package restserver.old.pusher;
 
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
-import thirdpartypusher.Cache;
+import restserver.Cache;
 
 public final class PusherInit {
 

@@ -1,4 +1,4 @@
-package thirdpartypusher.start;
+package restserver.start;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,7 +13,7 @@ public final class InputSetupManager<T> {
     }
 
     public void setup(T option) {
-        for (Parameter parameter : parameters) {
+        for (Parameter<T> parameter : parameters) {
             parameter.execute(option);
         }
     }

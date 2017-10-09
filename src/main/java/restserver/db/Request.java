@@ -1,4 +1,4 @@
-package thirdpartypusher.db;
+package restserver.db;
 
 
 import java.util.Map;

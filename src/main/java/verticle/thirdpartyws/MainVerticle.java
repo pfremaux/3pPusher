@@ -4,7 +4,7 @@ import io.vertx.core.Vertx;
 
 public class MainVerticle {
 
-    Vertx vertx;
+    private final Vertx vertx;
 
     public MainVerticle() {
         vertx = Vertx.vertx();

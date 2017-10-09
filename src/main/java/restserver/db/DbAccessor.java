@@ -1,11 +1,10 @@
-package thirdpartypusher.db;
+package restserver.db;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.sql.*;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DbAccessor {
@@ -34,7 +33,7 @@ public class DbAccessor {
         return bdd;
     }
 
-    public int writeAndGetGeneratedKey(Connection c, String req, List params) throws SQLException {
+    public int writeAndGetGeneratedKey(Connection c, String req, Map<String, Object> params, Map<String, String> knownTypes) throws SQLException {
         // TODO
         PreparedStatement ps;
         if (req.startsWith("insert") || req.startsWith("update")) {
@@ -43,8 +42,17 @@ public class DbAccessor {
             ps = c.prepareStatement(req);
         }
 
-        for (int i = 0; i < params.size(); i++) {
-            ps.setObject(i + 1, params.get(i));
+        int i = 1;
+        for (Map.Entry<String, Object> keyValueParameter : params.entrySet()) {
+            final String expectedType = knownTypes.get(keyValueParameter.getKey());
+            if ("Integer".equals(expectedType)) {
+                ps.setInt(i++, Integer.parseInt(keyValueParameter.getValue().toString()));
+            } else if ("String".equals(expectedType)) {
+                ps.setString(i++, keyValueParameter.getValue().toString());
+            } else {
+                ps.setObject(i++, keyValueParameter.getValue());
+            }
+
         }
         ps.executeUpdate();
         try {
@@ -63,7 +71,7 @@ public class DbAccessor {
         }
     }
 
-    public int writeAndGetNumberUpdated(Connection c, String req, List params, Map<String, String> knownTypes) throws SQLException {
+    public int writeAndGetNumberUpdated(Connection c, String req, Map<String, Object> params, Map<String, String> knownTypes) throws SQLException {
         // TODO same here ?
         PreparedStatement ps;
         if (req.startsWith("insert") || req.startsWith("update")) {
@@ -72,10 +80,16 @@ public class DbAccessor {
             ps = c.prepareStatement(req);
         }
 
-        for (int i = 0; i < params.size(); i++) {
-            Object x = params.get(i);
-            // if (x instanceof Date)
-            ps.setObject(i + 1, x);
+        int i = 1;
+        for (Map.Entry<String, Object> keyValueParameter : params.entrySet()) {
+            final String expectedType = knownTypes.get(keyValueParameter.getKey());
+            if ("Integer".equals(expectedType)) {
+                ps.setInt(i++, Integer.parseInt(keyValueParameter.getValue().toString()));
+            } else if ("String".equals(expectedType)) {
+                ps.setString(i++, keyValueParameter.getValue().toString());
+            } else {
+                ps.setObject(i++, keyValueParameter.getValue());
+            }
         }
         return ps.executeUpdate();
     }

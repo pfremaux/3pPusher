@@ -1,20 +1,17 @@
 # First configuration
 ---
-path: /books/:id
+path: /books
 method: GET
 # port: 8080
-urlParam:
-    id: Integer[1-6]
 actions:
   - type: sql
     in: postgres
-    command: select title, author from book where id = ?;
-    param:
-      - id
+    command: select id, title, author from book;
     output:
           title: String
           author: String
-    save: book
+          id: Integer
+    save: bookList
 response:
   json:
-    book: :book
+    collection: :bookList

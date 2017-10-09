@@ -1,4 +1,4 @@
-package thirdpartypusher;
+package restserver;
 
 import io.vertx.core.http.ServerWebSocket;
 

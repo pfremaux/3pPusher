@@ -1,6 +1,7 @@
 package verticle.rest.config;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ConfigCustom {
@@ -8,6 +9,7 @@ public class ConfigCustom {
     public static final List<String> SUPPORTED_HTTP_METHOD = Arrays.asList("GET", "POST", "PUT", "DELETE");
     private static Pattern pathPattern = Pattern.compile("[/a-zA-Z0-9:]+"); // TODO améliorer
     private static Pattern pathParameterPattern = Pattern.compile("\\:[a-z0-9]+");
+    private final Pattern firstPartInputType = Pattern.compile("[a-zA-Z]*");
 
     private String host = "localhost";
     private Integer port = 8080;
@@ -19,6 +21,7 @@ public class ConfigCustom {
     private HashMap<String, Object> response = new HashMap<>();
     private List<Map<String, Object>> actions = new ArrayList<>();
     private Map<String, String> knownTypes = new HashMap<>();
+    private Map<String, Validator> validators = new HashMap<>();
 
     public String toSimpleString() {
         return method + " " + host + ":" + port + path;
@@ -63,9 +66,54 @@ public class ConfigCustom {
         allParameters.addAll(inputInUrl);
         allParameters.addAll(query.keySet());
         allParameters.addAll(body.keySet());
-        // Eclaircir le role de known types
         knownTypes.putAll(body);
-        knownTypes.putAll(urlParam);
+        for (Map.Entry<String, String> entry : body.entrySet()) {
+            final String inputDeclaration = entry.getValue();
+            final Matcher matcher = firstPartInputType.matcher(inputDeclaration);
+            final String type;
+            if (matcher.find()) {
+                type = matcher.group();
+                if (inputDeclaration.length() > type.length()) {
+                    Validator validator;
+                    final String rule = inputDeclaration.substring(type.length());
+                    if ("String".equals(type)) {
+                        validator = StringValidator.getInstance(rule);
+                    } else if ("Integer".equals(type)) {
+                        validator = NumberValidator.getNumberValidatorInstance(rule, Integer::parseInt);
+                    } else {
+                        throw new RuntimeException(inputDeclaration + " does not respect the format of an input parameter.");
+                    }
+                    validators.put(entry.getKey(), validator);
+                }
+            } else {
+                throw new RuntimeException(entry + " does not respect the format of an input parameter.");
+            }
+            knownTypes.put(entry.getKey(), type);
+        }
+        for (Map.Entry<String, String> entry : urlParam.entrySet()) {
+            final String inputDeclaration = entry.getValue();
+            final Matcher matcher = firstPartInputType.matcher(inputDeclaration);
+            final String type;
+            if (matcher.find()) {
+                type = matcher.group();
+                if (inputDeclaration.length() > type.length()) {
+                    Validator validator;
+                    final String rule = inputDeclaration.substring(type.length());
+                    if ("String".equals(type)) {
+                        validator = StringValidator.getInstance(rule);
+                    } else if ("Integer".equals(type)) {
+                        validator = NumberValidator.getNumberValidatorInstance(rule, Integer::parseInt);
+                    } else {
+                        throw new RuntimeException(inputDeclaration + " does not respect the format of an input parameter.");
+                    }
+                    validators.put(entry.getKey(), validator);
+                }
+            } else {
+                throw new RuntimeException(entry + " does not respect the format of an input parameter.");
+            }
+            knownTypes.put(entry.getKey(), type);
+        }
+        // knownTypes.putAll(urlParam);
 
         if (!SUPPORTED_HTTP_METHOD.contains(method)) {
             throw new RuntimeException(method + " is not a valid HTTP method.");
@@ -193,5 +241,9 @@ public class ConfigCustom {
 
     public void setKnownTypes(Map<String, String> knownTypes) {
         this.knownTypes = knownTypes;
+    }
+
+    public Map<String, Validator> getValidators() {
+        return validators;
     }
 }

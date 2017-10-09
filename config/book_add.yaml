@@ -4,8 +4,8 @@ path: /books
 method: POST
 # port: 8080
 body:
-    title: string
-    author: string
+    title: String[/[a-z]+/]
+    author: String
 actions:
   - type: sql
     in: postgres
@@ -15,4 +15,5 @@ actions:
       - author
     save: id
 response:
-  txt: :id
+  json:
+    id: :id

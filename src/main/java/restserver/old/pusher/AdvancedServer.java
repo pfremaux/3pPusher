@@ -1,4 +1,4 @@
-package thirdpartypusher.old.pusher;
+package restserver.old.pusher;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
@@ -6,9 +6,8 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import thirdpartypusher.Cache;
-import thirdpartypusher.old.pusher.PusherInit;
-import thirdpartypusher.start.InputSetupManager;
+import restserver.Cache;
+import restserver.start.InputSetupManager;
 
 /**
  * Server websocket : ws://localhost:8080
